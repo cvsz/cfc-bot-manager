@@ -80,3 +80,13 @@
 - Which Camfrog product/version is the supported target? (threat-model.md)
 - What authentication/session lifecycle does the upstream adapter require?
 - Can the upstream interface be used under applicable terms and authorization?
+
+## F-008 — P1: Governance — PR #10 merged without independent approval on final head
+
+- **Severity:** P1 (Governance/Process)
+- **Files:** PR #10 (https://github.com/cvsz/cfc-bot-manager/pull/10), merge commit 8c863be514af4e35351270ae41f92631aed1b35c
+- **Evidence:** policedbc review on PR #10 was REQUEST_CHANGES on commit dd759bc (submitted 2026-11-08T06:04:36Z). New commits 58d0f76 and dc7109d were pushed after the review. PR #10 was merged via GitHub merge commit 8c863be before policedbc submitted an APPROVED review on the final head. GitHub API shows `verified: null` for signed commits 58d0f76/dc7109d (local `git verify-commit` passes with cvsz key 515DB3BD).
+- **Impact:** Independent review gate bypassed for PR #10; GPG signature not verified by GitHub; controlled merge flow (policedbc approve → cvsz merge) not followed.
+- **Fix:** Process deviation documented in docs/audit/executive-summary.md, docs/audit/issue-5-remediation.md, docs/audit/gpg-review-merge-evidence.md. Future PRs must enforce policedbc APPROVED review on exact head and GPG signature verification before merge.
+- **Regression test:** `tests/test_security_automation_retired.py` verifies retired automation stays absent; `verify-independent-approval` workflow enforces independent review (but `INDEPENDENT_REVIEWER` variable not configured — BLOCKED).
+- **State:** DOCUMENTED (process deviation; cannot be applied retroactively without reopening and re-merging).

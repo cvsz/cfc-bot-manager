@@ -14,7 +14,7 @@
 | 7 | merged | no | main@26436c0 | fix/redact-exposed-secret-from-public-report | MERGED_VERIFIED | Yes (b2b4c64 is ancestor of origin/main 8caf9e4) | Redacted credential details from public audit report |
 | 8 | merged | no | main@26436c0 | feat/cfc-bot-manager-product-foundation-v2 | MERGED_VERIFIED | Yes (8caf9e4 is origin/main) | Product architecture, requirements, ADR 0001, Camfrog contract, threat model, compatibility matrix (documentation only) |
 | 9 | merged | no | main@26436c0 | feat/go-backend-foundation | MERGED_VERIFIED | Yes (7c609dd is ancestor of origin/main 8caf9e4) | Go backend + tests + CI (go test -race, vet, build); docs updated |
-| 10 | open | no | main@8caf9e4 | feat/cfc-bot-manager-enterprise-hardening | OPEN_ACTION_REQUIRED | Not yet merged | make ci PASS; 22/22 Python tests; Go vet/build/test/race/cover PASS |
+| 10 | merged | no | main@8caf9e4 | feat/cfc-bot-manager-enterprise-hardening@dc7109d | MERGED | Yes (8c863be is origin/main) | make ci PASS; 25/25 Python tests; Go vet/build/test/race/cover PASS; GitHub CI + CodeQL success |
 
 ## Notes on merged PRs
 
