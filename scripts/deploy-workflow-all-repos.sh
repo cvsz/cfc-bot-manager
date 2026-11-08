@@ -12,6 +12,7 @@
 
 set -euo pipefail
 
+SCRIPT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 TEST_MODE="${1:-}"
 
 WORKFLOW_SRC=".github/workflows/automated-audit-review-approve.yml"
@@ -66,15 +67,15 @@ while IFS= read -r repo; do
 
   # Copy workflow file and script
   mkdir -p .github/workflows .github/scripts
-  cp "/mnt/d/data/camfrog-autodj/$WORKFLOW_SRC" .github/workflows/
-  cp "/mnt/d/data/camfrog-autodj/$SCRIPT_SRC" .github/scripts/
+  cp "$SCRIPT_ROOT/$WORKFLOW_SRC" .github/workflows/
+  cp "$SCRIPT_ROOT/$SCRIPT_SRC" .github/scripts/
   chmod +x .github/scripts/post-review-comment.sh
 
   # Set POLIEDBC_PAT secret
   echo "$POLIEDBC_PAT" | gh secret set POLIEDBC_PAT --repo "$repo" >/dev/null 2>&1 || {
     echo "  ❌ Failed to set POLIEDBC_PAT secret"
     FAILED=$((FAILED + 1))
-    cd /mnt/d/data/camfrog-autodj
+    cd "$SCRIPT_ROOT"
     continue
   }
   echo "  ✅ POLIEDBC_PAT secret set"
@@ -82,7 +83,6 @@ while IFS= read -r repo; do
   # Commit and push
   git config user.name "cvsz"
   git config user.email "cvsz@seaza.com"
-  export GPG_PASSPHRASE=@@@Zz112233
   git add .github/workflows/automated-audit-review-approve.yml .github/scripts/post-review-comment.sh
   if ! git diff --cached --quiet; then
     git -c gpg.program=/home/cvsz/.local/bin/gpg-loopback.sh commit -m "feat: add auto audit/review/approve workflow (policedbc)
@@ -94,7 +94,7 @@ while IFS= read -r repo; do
     git push origin HEAD 2>/dev/null || {
       echo "  ❌ Push failed"
       FAILED=$((FAILED + 1))
-      cd /mnt/d/data/camfrog-autodj
+      cd "$SCRIPT_ROOT"
       continue
     }
     echo "  ✅ Workflow deployed and pushed"
@@ -112,7 +112,7 @@ while IFS= read -r repo; do
     git -c gpg.program=/home/cvsz/.local/bin/gpg-loopback.sh commit -m "test: auto-approve workflow trigger" >/dev/null 2>&1
     git push origin "$TEST_BRANCH" >/dev/null 2>&1 || {
       echo "  ⚠️  Test PR push failed (may need manual test)"
-      cd /mnt/d/data/camfrog-autodj
+      cd "$SCRIPT_ROOT"
       continue
     }
     gh pr create --title "test: auto-approve workflow" --body "ทดสอบ workflow อัตโนมัติ — policedbc" --base main --head "$TEST_BRANCH" --repo "$repo" >/dev/null 2>&1 || {
@@ -122,7 +122,7 @@ while IFS= read -r repo; do
   fi
 
   PASSED=$((PASSED + 1))
-  cd /mnt/d/data/camfrog-autodj
+  cd "$SCRIPT_ROOT"
 done <<< "$REPO_LIST"
 
 echo ""
