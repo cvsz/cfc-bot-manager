@@ -12,6 +12,7 @@
 
 set -euo pipefail
 
+SCRIPT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 MAX_ITER="${1:-3}"
 shift || true
 REPOS_FILTER="${*:-}"
@@ -163,7 +164,6 @@ print('\n'.join(bad))
     if ! git diff --quiet || ! git diff --cached --quiet; then
       git config user.name "cvsz"
       git config user.email "cvsz@seaza.com"
-      export GPG_PASSPHRASE=@@@Zz112233
       git add -A
       git -c gpg.program=/home/cvsz/.local/bin/gpg-loopback.sh commit -m "fix: auto-fix loop — remove tracked secrets, add .gitignore" >/dev/null 2>&1
       git push origin HEAD 2>/dev/null && echo "  ✅ Commit & push แล้ว" || echo "  ⚠️  Commit สำเร็จแต่ push ไม่สำเร็จ (อาจเป็น protected branch)"
@@ -172,7 +172,7 @@ print('\n'.join(bad))
       echo "  ℹ️  ไม่มีไฟล์ให้แก้ไขอัตโนมัติ (ต้องแก้ด้วยมือ)"
     fi
 
-    cd /mnt/d/data/camfrog-autodj || exit 1
+    cd "$SCRIPT_ROOT" || exit 1
   done
 
   if [ "$FIXED_ANY" -eq 0 ]; then
