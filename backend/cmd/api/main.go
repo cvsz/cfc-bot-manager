@@ -26,13 +26,13 @@ func main() {
 	slog.SetDefault(logger)
 
 	server := &http.Server{
-		Addr: cfg.HTTPAddr,
-		Handler: httpapi.NewHandler(version, nil),
+		Addr:              cfg.HTTPAddr,
+		Handler:           httpapi.NewHandler(version, nil),
 		ReadHeaderTimeout: cfg.ReadHeader,
-		ReadTimeout: cfg.Read,
-		WriteTimeout: cfg.Write,
-		IdleTimeout: cfg.Idle,
-		MaxHeaderBytes: 1 << 20,
+		ReadTimeout:       cfg.Read,
+		WriteTimeout:      cfg.Write,
+		IdleTimeout:       cfg.Idle,
+		MaxHeaderBytes:    1 << 20,
 	}
 
 	serveErr := make(chan error, 1)

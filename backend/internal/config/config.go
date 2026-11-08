@@ -11,23 +11,23 @@ import (
 
 type Config struct {
 	Environment string
-	HTTPAddr string
-	ReadHeader time.Duration
-	Read time.Duration
-	Write time.Duration
-	Idle time.Duration
-	Shutdown time.Duration
+	HTTPAddr    string
+	ReadHeader  time.Duration
+	Read        time.Duration
+	Write       time.Duration
+	Idle        time.Duration
+	Shutdown    time.Duration
 }
 
 func Load() (Config, error) {
 	cfg := Config{
 		Environment: "development",
-		HTTPAddr: "127.0.0.1:8080",
-		ReadHeader: 5 * time.Second,
-		Read: 15 * time.Second,
-		Write: 15 * time.Second,
-		Idle: 60 * time.Second,
-		Shutdown: 10 * time.Second,
+		HTTPAddr:    "127.0.0.1:8080",
+		ReadHeader:  5 * time.Second,
+		Read:        15 * time.Second,
+		Write:       15 * time.Second,
+		Idle:        60 * time.Second,
+		Shutdown:    10 * time.Second,
 	}
 	if value, ok := os.LookupEnv("APP_ENV"); ok {
 		cfg.Environment = strings.TrimSpace(value)
@@ -37,7 +37,7 @@ func Load() (Config, error) {
 	}
 	durations := []struct {
 		name string
-		dst *time.Duration
+		dst  *time.Duration
 	}{
 		{"HTTP_READ_HEADER_TIMEOUT", &cfg.ReadHeader},
 		{"HTTP_READ_TIMEOUT", &cfg.Read},
@@ -81,7 +81,7 @@ func (c Config) Validate() error {
 		return fmt.Errorf("HTTP_ADDR port must be between 1 and 65535")
 	}
 	timeouts := []struct {
-		name string
+		name  string
 		value time.Duration
 	}{
 		{"HTTP_READ_HEADER_TIMEOUT", c.ReadHeader},

@@ -51,3 +51,36 @@ func TestLoadRejectsMalformedDuration(t *testing.T) {
 		t.Fatal("expected malformed duration to fail")
 	}
 }
+
+func TestValidateRejectsInvalidEnvironment(t *testing.T) {
+	cfg := Config{Environment: "staging", HTTPAddr: "127.0.0.1:8080"}
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected unsupported environment to fail")
+	}
+}
+
+func TestValidateRejectsMissingHostAndOutOfRangePort(t *testing.T) {
+	cfg := Config{Environment: "test", HTTPAddr: ":8080"}
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected unspecified host to fail")
+	}
+	cfg.HTTPAddr = "127.0.0.1:0"
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected port 0 to fail")
+	}
+	cfg.HTTPAddr = "127.0.0.1:99999"
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected port above 65535 to fail")
+	}
+}
+
+func TestValidateAcceptsLoopbackOnly(t *testing.T) {
+	cfg := Config{
+		Environment: "production", HTTPAddr: "127.0.0.1:8080",
+		ReadHeader: time.Second, Read: time.Second, Write: time.Second,
+		Idle: time.Second, Shutdown: time.Second,
+	}
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("loopback address must be valid: %v", err)
+	}
+}
