@@ -1,0 +1,101 @@
+name: Independent PR review gate
+
+on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review, synchronize]
+  pull_request_review:
+    types: [submitted, dismissed]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  request-review:
+    if: github.event_name == 'pull_request_target' && github.event.pull_request.draft == false && vars.INDEPENDENT_REVIEWER != '' && github.event.pull_request.user.login != vars.INDEPENDENT_REVIEWER
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate reviewer configuration
+        env:
+          REVIEWER: ${{ vars.INDEPENDENT_REVIEWER }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! [[ "$REVIEWER" =~ ^[A-Za-z0-9-]+$ ]]; then
+            echo "::error::Set repository variable INDEPENDENT_REVIEWER to a valid GitHub login."
+            exit 1
+          fi
+          if [[ "${REVIEWER,,}" == "${PR_AUTHOR,,}" ]]; then
+            echo "::error::The independent reviewer must not be the pull request author."
+            exit 1
+          fi
+      - name: Request independent review idempotently
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REVIEWER: ${{ vars.INDEPENDENT_REVIEWER }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          requested="$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER/requested_reviewers" --jq '.users[].login')"
+          if grep -Fxiq -- "$REVIEWER" <<< "$requested"; then
+            echo "Review already requested from $REVIEWER."
+          else
+            gh api --method POST "repos/$GH_REPO/pulls/$PR_NUMBER/requested_reviewers" -f "reviewers[]=$REVIEWER"
+          fi
+
+  verify-independent-approval:
+    if: github.event.pull_request.draft == false
+    permissions:
+      contents: read
+      pull-requests: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate reviewer configuration
+        env:
+          REVIEWER: ${{ vars.INDEPENDENT_REVIEWER }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! [[ "$REVIEWER" =~ ^[A-Za-z0-9-]+$ ]]; then
+            echo "::error::Repository variable INDEPENDENT_REVIEWER is missing or invalid."
+            exit 1
+          fi
+          if [[ "${REVIEWER,,}" == "${PR_AUTHOR,,}" ]]; then
+            echo "::error::Independent approval cannot come from the pull request author."
+            exit 1
+          fi
+      - name: Require approval for the exact current head
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          REVIEWER: ${{ vars.INDEPENDENT_REVIEWER }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          reviews="$(gh api --paginate --slurp --jq 'add' "repos/$GH_REPO/pulls/$PR_NUMBER/reviews")"
+          if ! jq -e --arg reviewer "$REVIEWER" --arg sha "$HEAD_SHA" --arg author "$PR_AUTHOR" '
+            [ .[] | select((.user.login // "" | ascii_downcase) == ($reviewer | ascii_downcase)) ]
+            | sort_by(.submitted_at // "")
+            | (last // {})
+            | ((.user.login // "" | ascii_downcase) != ($author | ascii_downcase))
+              and (.state == "APPROVED")
+              and (.commit_id == $sha)
+          ' <<< "$reviews" >/dev/null; then
+            echo "::error::No independent APPROVED review exists for the exact current head $HEAD_SHA."
+            exit 1
+          fi
+          echo "Independent approval verified for exact head $HEAD_SHA."
+
+# Configure verify-independent-approval as a required status check in branch protection.
+# Also set the repository variable INDEPENDENT_REVIEWER to a valid, independent GitHub login.
+# This workflow never approves or merges a pull request.

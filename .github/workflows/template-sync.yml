@@ -1,0 +1,65 @@
+name: Propose upstream template updates
+
+on:
+  schedule:
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: template-sync-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  template-sync:
+    if: github.repository != 'cvsz/ztemplate'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: true
+
+      - name: Check for existing sync pull request
+        id: existing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          count="$(gh pr list --state open --search 'in:title "chore: sync zeaz template"' --json number --jq 'length')"
+          if [ "$count" -gt 0 ]; then
+            echo 'skip=true' >> "$GITHUB_OUTPUT"
+            echo 'Existing template sync PR requires review before another update.'
+          fi
+
+      - name: Apply conflict-safe allowlisted updates
+        if: steps.existing.outputs.skip != 'true'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 scripts/sync_template.py
+          python3 scripts/validate_repo.py
+          python3 -m unittest discover -s tests -v
+
+      - name: Open reviewable pull request
+        if: steps.existing.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ -z "$(git status --porcelain)" ]; then
+            echo 'No changes.'
+            exit 0
+          fi
+          branch="chore/ztemplate-sync-${GITHUB_RUN_ID}"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "$branch"
+          git add -- docs/ai/prompts/universal-autonomous-engineering.md docs/ai/prompts/repository.md docs/ai/playbooks/autonomous-repo-upgrade.md .github/template-sync-state.json
+          git commit -m 'chore: sync zeaz template'
+          git push origin "$branch"
+          gh pr create --title 'chore: sync zeaz template' --body 'Safe allowlisted upstream documentation updates from cvsz/ztemplate. Verify local contracts, security posture, and current-head CI before merging. No automatic merge.' --base "${GITHUB_REF_NAME}" --head "$branch"
