@@ -25,15 +25,7 @@ func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	slog.SetDefault(logger)
 
-	server := &http.Server{
-		Addr:              cfg.HTTPAddr,
-		Handler:           httpapi.NewHandler(version, nil),
-		ReadHeaderTimeout: cfg.ReadHeader,
-		ReadTimeout:       cfg.Read,
-		WriteTimeout:      cfg.Write,
-		IdleTimeout:       cfg.Idle,
-		MaxHeaderBytes:    1 << 20,
-	}
+	server := NewServer(cfg, version, nil)
 
 	serveErr := make(chan error, 1)
 	go func() {
@@ -68,5 +60,20 @@ func main() {
 		}
 		logger.Error("HTTP server stopped before shutdown was requested")
 		os.Exit(1)
+	}
+}
+
+// NewServer builds an HTTP server from configuration with bounded timeouts,
+// a size-limited header buffer, and the shared handler. Extracted from main()
+// so the server lifecycle can be tested without starting the process entrypoint.
+func NewServer(cfg config.Config, version string, readiness httpapi.ReadinessCheck) *http.Server {
+	return &http.Server{
+		Addr:              cfg.HTTPAddr,
+		Handler:           httpapi.NewHandler(version, readiness),
+		ReadHeaderTimeout: cfg.ReadHeader,
+		ReadTimeout:       cfg.Read,
+		WriteTimeout:      cfg.Write,
+		IdleTimeout:       cfg.Idle,
+		MaxHeaderBytes:    1 << 20,
 	}
 }
