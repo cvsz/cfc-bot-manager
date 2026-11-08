@@ -1,11 +1,10 @@
 """Static contract tests for the independent-review workflow and rollout script."""
 
 import os
-from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = (ROOT / ".github/workflows/request-independent-review.yml").read_text(encoding="utf-8")
