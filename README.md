@@ -1,189 +1,37 @@
-# zTemplate
+# CFC Bot Manager
 
-A reusable, security-oriented GitHub project starting point with governance, engineering guidance, CI, AI-agent operating rules, repository validation, and an automated GitHub administration gate.
+CFC Bot Manager is a cross-platform management product for Camfrog bot instances, designed around a shared backend and protocol adapter.
 
-This repository is a **template foundation**, not a deployable application. A repository generated from it still requires stack-specific implementation, deployment, recovery, observability, and security evidence before that application can be called production ready.
+**Project status:** product foundation and requirements are being established. The repository currently contains governance/bootstrap foundations; application runtime, protocol compatibility, and production readiness must be demonstrated by implementation and tests.
 
-## Create a new project
+## Product surfaces
 
-1. Click **Use this template** on GitHub and clone the generated repository.
-2. Preview project initialization:
+- **Web Control Panel:** React + TypeScript.
+- **Windows Desktop:** Tauri 2 + React + TypeScript.
+- **Shared backend:** Go API, authorization, persistence, jobs, and real-time event delivery.
+- **Protocol boundary:** a versioned Camfrog adapter that isolates observed upstream web-interface behavior from the application domain.
 
-   ```bash
-   python3 scripts/bootstrap.py --name my-service --owner my-org --codeowner my-org/maintainers --description 'New service'
-   ```
+## Architecture principles
 
-3. Apply explicitly, inspect the diff, and review ownership/security files:
+1. Web and desktop clients use the same backend contracts and authorization rules.
+2. Camfrog-specific details remain behind an adapter; business logic never depends on raw upstream HTML or transport payloads.
+3. PostgreSQL is the server-side source of truth. A local SQLite cache is optional and must never become a second authority.
+4. REST handles commands and queries; WebSocket carries authenticated live updates.
+5. Compatibility is capability-based and evidence-backed. Unknown features are disabled rather than guessed.
+6. Security controls apply server-side to every API, not only in the UI.
 
-   ```bash
-   python3 scripts/bootstrap.py --name my-service --owner my-org --codeowner my-org/maintainers --description 'New service' --apply
-   make validate-template
-   ```
+See [product requirements](docs/product/requirements.md), [architecture](docs/architecture.md), and [protocol evidence](docs/protocols/camfrog-observed-contract.md).
 
-4. Select an optional [project profile](docs/profiles.md), replace placeholder `Makefile` / `Dockerfile`, and complete the [Implementation Checklist](IMPLEMENTATION-CHECKLIST.md).
-5. Configure and verify repository administration controls from an authenticated GitHub admin identity:
+## Plugin compatibility
 
-   ```bash
-   gh variable set INDEPENDENT_REVIEWER --repo my-org/my-service --body reviewer-login
-   python3 scripts/github_admin.py --repo my-org/my-service --apply
-   ```
+Captured legacy plugin pages are not proof of Cloud Bot compatibility. The current evidence inventory covers plugin IDs 1–9 and 11–16; ID 10 has only a partial, unidentified capture and remains **UNVERIFIED**. Each capability must be verified against the actual supported Camfrog product/version before it is enabled.
 
-6. Add stack-specific CI, security, release, deployment, backup/restore, rollback, monitoring, and operational evidence.
+## Development status
 
-See the complete [startup guide](docs/startup.md).
+This repository currently contains project governance and planning artifacts. Do not treat it as a functioning bot manager until the runtime implementation, CI checks, authorized integration tests, and deployment evidence exist.
 
-## Included
+Start with [development guide](docs/development.md) and [implementation plan](docs/product/implementation-plan.md).
 
-- Issue and pull request templates
-- CODEOWNERS and governance guidance
-- Security and support policies
-- CI repository-baseline validation
-- CodeQL security scanning
-- Dependency Review
-- Dependabot configuration
-- Immutable SHA pinning for baseline GitHub Actions
-- Release guidance and release-note configuration
-- Repository structure and local Markdown-link validation
-- GitHub administration automation with read-back verification
-- Conventional commit / PR guidance
-- Documentation, ADR, changelog, and roadmap structure
-- Environment example
-- Docker and Makefile placeholders
-- Cloudflare/Terraform ownership contract
-- Cross-agent ZEAZ engineering execution layer
-- Reusable skill/catalog structure
-- Opt-in safe weekly template-update PRs for generated repositories
+## Security
 
-## Repository administration gate
-
-`scripts/github_admin.py` is dry-run by default.
-
-Set `INDEPENDENT_REVIEWER` to a valid GitHub login that is independent of the pull request author. The workflow's `verify-independent-approval` job checks that the latest review from this account approves the exact current head; make this status check required in branch protection.
-
-Apply and verify:
-
-```bash
-gh variable set INDEPENDENT_REVIEWER --repo OWNER/REPO --body reviewer-login
-python3 scripts/github_admin.py --repo OWNER/REPO --apply
-```
-
-Verify without mutation:
-
-```bash
-python3 scripts/github_admin.py --repo OWNER/REPO --verify
-```
-
-The helper is designed to enforce or verify:
-
-- pull-request review before merge
-- CODEOWNERS review
-- stale-review dismissal
-- approval after the latest push
-- conversation resolution
-- strict required status checks
-- administrator enforcement
-- no force pushes
-- no protected-branch deletion
-- Dependabot vulnerability alerts/security fixes
-- private vulnerability reporting
-- secret scanning/push protection when available
-- read-only default Actions token permissions
-- Actions cannot approve pull requests
-
-Presence of this script is not evidence that a generated repository is configured. The effective settings must be read back successfully.
-
-See [GitHub repository administration gate](docs/ai/guides/github-repository-admin.md).
-
-## AI engineering execution layer
-
-- [ZEAZ engineering execution framework](ZEAZ-INTRODUCTION.md)
-- [Repository agent contract](AGENTS.md)
-- [Claude Code instructions](CLAUDE.md)
-- [OpenCode instructions](OPENCODE.md)
-- [Reusable AI playbooks and prompts](docs/ai/README.md)
-- [ECC integration](docs/ai/guides/ecc-integration.md)
-- [ZEAZ skills catalog](skills/README.md)
-
-These files guide execution and evidence handling. They are not production-readiness evidence by themselves.
-
-## DNS and public hostnames
-
-Do not add duplicate Cloudflare/DNS ownership to a generated project. Public DNS and shared tunnel ingress must have one designated owning repository.
-
-See [Cloudflare and Terraform ownership](docs/cloudflare-terraform.md).
-
-## Template limitations
-
-- Baseline CI validates template structure and bootstrap behavior; generated projects must add real application lint/build/test/security checks.
-- The included Dockerfile and application Makefile targets are placeholders and must not ship unchanged.
-- Shared infrastructure remains owned by the designated infrastructure repository.
-- `scripts/github_admin.py` requires an authenticated GitHub identity with repository Administration permission.
-- A green CI run proves only the checks that actually ran; it does not prove application production readiness.
-- Generated repositories must independently verify deployment, rollback, backup/restore, observability, security, capacity, and incident-response gates that apply to the real system.
-
-## Repository structure
-
-```text
-.github/
-  ISSUE_TEMPLATE/
-  workflows/
-  CODEOWNERS
-  PULL_REQUEST_TEMPLATE.md
-  dependabot.yml
-  release.yml
-docs/
-  adr/
-  ai/
-    guides/
-    playbooks/
-    prompts/
-  architecture.md
-  development.md
-  release.md
-  repository-rollout.md
-  startup.md
-scripts/
-  bootstrap.py
-  github_admin.py
-  validate_repo.py
-skills/
-components.d/
-plugins.d/
-AGENTS.md
-CLAUDE.md
-OPENCODE.md
-ZEAZ-INTRODUCTION.md
-ecc-install.json
-CHANGELOG.md
-CODE_OF_CONDUCT.md
-CONTRIBUTING.md
-GOVERNANCE.md
-IMPLEMENTATION-CHECKLIST.md
-LICENSE
-Makefile
-README.md
-ROADMAP.md
-SECURITY.md
-```
-
-## Principles
-
-- Secure by default
-- Least privilege
-- Immutable/reproducible automation where practical
-- Small, reviewable pull requests
-- Documentation as part of delivery
-- Evidence-backed readiness claims
-- No weakening of security gates merely to make CI green
-- Explicit rollback/recovery practices
-- Repository-specific policy is preserved when rolling the baseline into existing projects
-
-## Rollout to existing repositories
-
-Do not bulk-copy this template over an established repository.
-
-Use the [repository rollout guide](docs/repository-rollout.md) to audit the target first and port only missing compatible controls.
-
-## License
-
-MIT. See `LICENSE`.
+Do not commit Camfrog cookies, session tokens, room access keys, passwords, or private user data. Report security issues through [SECURITY.md](SECURITY.md).

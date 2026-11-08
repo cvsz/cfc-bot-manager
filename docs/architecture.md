@@ -1,55 +1,112 @@
-# Architecture
+# CFC Bot Manager Architecture
 
-## Purpose
+## Status and scope
 
-`ztemplate` is a language-agnostic repository foundation rather than an application runtime.
+This document defines the intended product architecture. It is not evidence that an application runtime exists or that Camfrog upstream compatibility is verified.
 
-Its architecture is intentionally layered so generated projects can replace application-specific pieces without weakening repository governance.
+## System context
 
-## Layers
+CFC Bot Manager has two clients and one shared server-side application:
+- Web Control Panel: React + TypeScript.
+- Windows Desktop: Tauri 2 + React + TypeScript.
+- Backend: Go, with PostgreSQL persistence and REST/WebSocket interfaces.
 
-### Repository governance
+Both clients authenticate to the same backend and share generated/validated API contracts. Desktop-specific functionality must remain in Tauri commands and narrowly scoped capabilities; no privileged filesystem or process access is exposed to web content.
 
-Root policy documents define ownership, contribution, security, evidence, and release expectations:
+## Logical components
 
-- `AGENTS.md`
-- `ZEAZ-INTRODUCTION.md`
-- `GOVERNANCE.md`
-- `SECURITY.md`
-- `CONTRIBUTING.md`
+1. **Client applications**
+   - Web and desktop use a shared TypeScript API client, contracts, and reusable UI primitives.
+   - Route/page modules organize dashboard, bots, rooms, plugins, users, audit/activity, profile, and settings views.
+   - Client state is a cache, never an authorization source.
 
-### GitHub control plane
+2. **API boundary**
+   - Versioned REST endpoints for identity, sessions, bot/room resources, plugin settings, capability discovery, and audit history.
+   - WebSocket for authenticated status and event updates.
+   - Request IDs, bounded payloads, schema validation, explicit errors, timeouts, and cancellation.
 
-`.github/` provides CI/security/community baselines.
+3. **Application/domain layer**
+   - User, tenant, bot, room, plugin capability, settings, session, and audit domains.
+   - Authorization decisions are made server-side for every resource and operation.
+   - Domain services do not depend on Camfrog HTML, HTTP forms, or RPC envelope details.
 
-`scripts/github_admin.py` handles repository settings that cannot be enforced by committed files alone and verifies effective provider state after mutation.
+4. **Camfrog adapter**
+   - Implements a narrow interface for status, language, plugin enable/disable, settings read/write, and supported actions only where evidence exists.
+   - Owns transport, session handling, wire DTOs, version/capability negotiation, response validation, and compatibility tests.
+   - Must distinguish unsupported, unknown, unavailable, and transient failure states.
+   - No automatic retries for non-idempotent actions unless idempotency is established.
 
-### Validation
+5. **Persistence and background work**
+   - PostgreSQL is the server-side source of truth.
+   - Migrations are explicit and tested.
+   - Background jobs are bounded, observable, idempotent where possible, and safe to retry.
+   - SQLite may be used as a desktop cache only after cache invalidation and encryption requirements are specified.
 
-`scripts/validate_repo.py` checks required template structure and local Markdown links.
+6. **Security/operations**
+   - Secure sessions, CSRF defense for cookie auth, strict CORS/origin policy, RBAC, tenant isolation, rate limits, audit trail, secret redaction, and structured telemetry.
+   - Health/readiness endpoints do not disclose credentials or internal topology.
+   - Configuration is validated at startup; secrets are injected through runtime configuration, not committed files.
 
-`tests/` validates bootstrap behavior.
+## Proposed repository organization
 
-Application-specific lint/test/build/security validation must be added by generated projects.
+Create only directories with implemented content; this is a target layout, not a mandate to create empty scaffolding.
 
-### Project initialization
+```text
+apps/
+  web/                 React + TypeScript control panel
+  desktop/             Tauri 2 + React desktop application
+packages/
+  contracts/           Shared API/event schemas and TS types
+  client/              Typed REST/WebSocket client
+  ui/                  Shared UI components
+backend/
+  cmd/api/
+  internal/
+    auth/              Sessions, MFA, RBAC, middleware
+    domain/             Entities and domain contracts
+    api/                HTTP handlers, middleware, WebSocket
+    service/            Use cases
+    repository/         Persistence interfaces
+    persistence/        PostgreSQL adapters/migrations
+    camfrog/            Adapter interface and protocol clients
+    security/           CSRF, origins, redaction, limits
+    observability/
+camfrog/
+  contracts/            Captured/sanitized protocol fixtures
+  compatibility/        Version/capability evidence matrix
+docs/
+  adr/
+  product/
+  protocols/
+  security/
+tests/
+  contract/
+  integration/
+  security/
+  e2e/
+deployments/
+  docker/
+```
 
-`scripts/bootstrap.py` changes project identity/ownership routing only. It does not create application architecture or deploy infrastructure.
+## Protocol boundary and evidence
 
-### AI/agent execution
+Observed pages show a JSON RPC POST to `/bot/ajax/` with `{id, method, params}`, as well as separate multipart form submissions. These are observed interfaces, not a published supported SDK. See [observed contract](protocols/camfrog-observed-contract.md).
 
-`docs/ai/`, `skills/`, `components.d/`, and `plugins.d/` provide reusable agent execution guidance and discovery without making application-runtime assumptions.
+The adapter must preserve wire compatibility in transport DTOs and translate into typed domain values. Unknown fields and semantics are not to be guessed. Contract fixtures must be sanitized and contain no cookies, session identifiers, or room keys.
 
-### Application placeholders
+## Authentication and authorization
 
-The root Dockerfile and application Makefile targets are intentionally non-production placeholders. Generated projects replace them with stack-specific implementations.
+- Establish an authenticated principal and tenant context on every request.
+- Enforce resource-level access in backend use cases and repositories.
+- Use secure, rotated sessions; MFA for privileged users; server-side RBAC.
+- Protect cookie-authenticated mutations with CSRF tokens and strict Origin validation.
+- Validate WebSocket authentication and re-check authorization on subscriptions/actions.
+- Log actor, tenant, operation, target, result, and correlation ID; redact secrets.
 
-## Existing-repository adoption
+## Failure semantics
 
-The architecture is composable. Established repositories should use [repository rollout](repository-rollout.md) and port only compatible missing layers rather than copying the tree wholesale.
+A remote Camfrog operation can fail independently of local persistence. Model remote operations as explicit states and never report success optimistically. For plugin toggles, reconcile the displayed state only after a validated upstream acknowledgement; on failure retain the last confirmed state and surface the error.
 
-## Production boundary
+## Key decisions
 
-Repository-foundation readiness and application production readiness are separate claims.
-
-The template can verify repository controls, documentation structure, and baseline automation. A generated application must independently verify runtime architecture, deployment, data, recovery, observability, capacity, security, and incident-response gates that apply to it.
+See [ADR 0001](adr/0001-product-stack-and-adapter-boundary.md) for the initial stack and adapter boundary. Amend via a new ADR when evidence or constraints change.

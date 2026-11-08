@@ -1,75 +1,60 @@
-# AGENTS.md — Repository Agent Contract
+# AGENTS.md — CFC Bot Manager Engineering Contract
 
-## Purpose
-This repository is a reusable GitHub project template. Changes must remain generic, secure by default, easy to customize, and safe to inherit into a newly generated repository.
+## READ FIRST — Canonical ZeaZDev policy
 
-## Operating rules
-- Read README.md, CONTRIBUTING.md, SECURITY.md, ROADMAP.md, and the closest AGENTS.md before editing.
-- Keep code, configuration, filenames, commit messages, and technical documentation in English.
-- Prefer the smallest reviewable change that satisfies the requested scope.
-- Never weaken CI, security scanning, dependency review, branch protections, or release controls merely to make a check pass.
-- Never commit credentials, tokens, private keys, production endpoints, personal data, or realistic secrets. Use documented placeholders.
-- Do not invent project-specific owners, domains, deployment providers, package registries, cloud accounts, or credentials.
-- Preserve template portability across languages and frameworks unless a file explicitly declares a narrower scope.
-- Reuse existing workflows and documents instead of creating overlapping alternatives.
-- Pin permissions for GitHub Actions to least privilege and prefer maintained first-party/verified actions.
-- Treat external input, generated artifacts, pull requests from forks, and dependency metadata as untrusted.
+Read https://github.com/cvsz/zeaz/blob/main/zeaz.md before every engineering task. This local contract adds product-specific requirements and must not weaken the canonical policy.
 
-## Template placeholders
-Use obvious placeholders such as `PROJECT_NAME`, `OWNER`, `example.com`, and `REPLACE_ME`. Any generated repository must be able to find and replace placeholders without exposing secrets.
+## Product scope
 
-## Review skill
+CFC Bot Manager is a cross-platform management product with:
+- a Windows desktop application (Tauri 2 + React + TypeScript);
+- a web control panel (React + TypeScript);
+- one shared Go backend and Camfrog protocol adapter;
+- PostgreSQL as the server-side source of truth;
+- REST for request/response APIs and WebSocket for live status/events.
 
-- Use [Scrutinize](.agents/skills/scrutinize/SKILL.md) when asked to review, audit, sanity-check, or give a second opinion on a plan, PR, diff, design, or code change, or when invoked with `/scrutinize` in a compatible agent.
-- Question whether the change is necessary or can be smaller before tracing real code paths and verifying behavioral claims. Cite concrete file/line evidence and distinguish unverified claims from confirmed behavior.
-- The skill guides agent behavior; it does not itself install a slash command or replace required tests, CI, or human review.
+This describes the intended architecture, not evidence that runtime components already exist.
 
-## Project initialization
+## Required workflow
 
-- For a repository created with **Use this template**, follow [docs/startup.md](docs/startup.md) and preview `scripts/bootstrap.py` before `--apply`; pass an actual GitHub user or org/team via `--codeowner` and verify write access.
-- Do not present an initialized scaffold as a running or production-ready system; bootstrap changes project identity and ownership routing only.
-- Replace Makefile and Dockerfile placeholders with actual project-specific commands and images before enabling an application delivery pipeline.
-- Never overwrite existing application code, production secrets, DNS ownership or original license attribution during initialization.
+Inspect → Understand → Plan → Validate → Apply → Test → Verify → Document. Read policy, current code, tests, workflows, and relevant docs before edits. Search for existing implementations before adding new ones. Keep PRs focused and reviewable.
 
-## Change workflow
-1. Inspect the current exact branch/head and existing files.
-2. Identify the smallest missing or inconsistent template capability.
-3. Add tests or validation first when practical.
-4. Implement without widening scope.
-5. Run the relevant validation and security checks.
-6. Update documentation when behavior, setup, governance, or release procedures change.
-7. Open a pull request; do not claim merge/release readiness without exact-head evidence.
+## Protocol and compatibility constraints
 
-## Verification
-At minimum, verify Markdown/YAML syntax for touched files, workflow permissions/triggers, links and placeholders, absence of committed secrets, and consistency between README, templates, governance, security, and release documentation.
+- Isolate Camfrog-specific transport and payload behavior behind an adapter boundary.
+- The observed POST /bot/ajax/ JSON RPC protocol and multipart form submissions are undocumented/private web interfaces, not a verified public SDK.
+- Treat protocol support as experimental and compatibility-gated until verified using authorized test accounts/environments.
+- Never scrape, bypass authentication, evade rate limits, or use captured credentials/session material.
+- Never commit cookies, Set-Cookie headers, session tokens, room access keys, passwords, or private user data.
+- Never claim a Cloud Bot or legacy plugin works without end-to-end evidence for that exact product/version.
+- Preserve observed wire names and positional ordering in transport DTOs; map them into typed domain models at the adapter boundary.
+- Unknown plugin #10 must remain UNVERIFIED. Do not infer its identity from the partial heap-related form capture.
+- Preserve plugin settings as opaque/raw values when semantics or validation constraints are not evidenced.
 
-## Pull requests and releases
-PRs must state scope, tests, security impact, compatibility/migration impact, documentation impact, deployment impact, and rollback. Releases require green required checks and explicit evidence; never infer production readiness from documentation alone.
+## Security requirements
 
-## Security
-Report vulnerabilities through SECURITY.md, not public issues. Security-related templates must redirect sensitive reports accordingly. Fail closed when a security-sensitive configuration is incomplete.
+- Secure sessions, CSRF protection for cookie-authenticated writes, strict origin checks, secure cookie flags, RBAC, tenant/resource isolation, and audit logging.
+- Validate all external inputs and remote responses against schemas.
+- Render user/plugin-provided text as text, never trusted HTML.
+- Use explicit request timeouts, cancellation, bounded payload sizes, and safe retry policies.
+- Never forward Authorization across origins or redirects.
+- State-changing actions must use appropriate HTTP methods and must not be implemented as unsafe GET links.
+- Fail closed when authorization, protocol capability, or compatibility state is unknown.
 
-## Documentation ownership
-- `.github/`: GitHub automation, community health, ownership, issue/PR templates.
-- `docs/`: versioned engineering, operations, release, repository-administration, and rollout guidance.
-- `docs/adr/`: architecture decision records.
-- Root Markdown files: repository-wide policy and project lifecycle guidance.
+## Implementation quality
 
-## Nested AGENTS.md
-Add a child AGENTS.md only when a subtree has durable rules that differ from this contract. The nearest AGENTS.md may add stricter local requirements but must not weaken repository-wide security rules.
+- Go backend; React + TypeScript web; Tauri 2 desktop.
+- Share contracts, API client, and reusable UI only where this reduces duplication without obscuring platform boundaries.
+- Keep protocol transport separate from domain services and persistence.
+- Prefer small dependencies and explicit contracts.
+- Add tests for parsing, validation, authorization, protocol errors, and failure/rollback paths.
+- Do not add fake adapters, mock-backed production behavior, placeholder endpoints, or controls that imply unsupported functionality.
+- Keep secrets out of logs and test fixtures.
 
+## Evidence states
 
-## ZEAZ reusable execution layer
+Use VERIFIED (reproduced by test/authorized runtime check for stated version), OBSERVED (visible in supplied source/capture but not independently verified), INFERRED (design interpretation), UNVERIFIED (evidence absent/ambiguous), and UNSUPPORTED (known unavailable in stated environment). Every plugin capability and protocol behavior must carry an evidence state.
 
-- Use [ZEAZ-INTRODUCTION.md](ZEAZ-INTRODUCTION.md) as the cross-agent execution framework.
-- Use [docs/ai/README.md](docs/ai/README.md) to select task-specific reusable prompts and playbooks.
-- Task playbooks are additive and never weaken this repository contract or narrower subtree rules.
-- Use the canonical evidence-state definitions and decision rule in [ZEAZ-INTRODUCTION.md](ZEAZ-INTRODUCTION.md); do not redefine them per harness or playbook.
-- Keep implementation, verification, deployment, and production readiness as distinct states.
+## Completion
 
-
-## Existing-repository rollout
-
-When applying this template to an established repository, follow [docs/repository-rollout.md](docs/repository-rollout.md). Audit the target first and port only missing compatible controls. Do not overwrite repository-specific AGENTS rules, CI matrices, release workflows, infrastructure ownership, or operational evidence merely to match this template.
-
-For repository administration, `scripts/github_admin.py` requires an authenticated GitHub identity with Administration permission. Treat successful read-back verification—not script presence—as evidence that the controls are effective.
+Run relevant formatting, lint, type, unit/integration, build, security, and repository validation. Inspect final diff. State exactly which checks could not run and why. Do not claim deployment, compatibility, or production readiness based on documentation alone.
