@@ -2,7 +2,7 @@
 
 **Repository:** cvsz/cfc-bot-manager
 **Baseline SHA:** 5e020ff (initial commit on local main); origin/main advanced to 8caf9e4 after fetch
-**Working branch:** main (commit 13a5fd3, PR #12 merged)
+**Working branch:** main (commit 9411d27, PR #14 merged)
 **Working-tree status:** clean, up to date with origin/main
 **Evidence framework:** ZEAZ-INTRODUCTION.md (VERIFIED / PARTIALLY VERIFIED / UNVERIFIED / BLOCKED / NOT APPLICABLE)
 **Date:** 2026-11-08
@@ -104,12 +104,13 @@ Windows-specific tests (Tauri desktop) are BLOCKED — environment is Linux/WSL,
 - `gh` authenticated as `cvsz` (active). `policedbc` authenticated but inactive.
 - PR #10 merged as cvsz (merge commit 8c863be); policedbc review was REQUEST_CHANGES on prior head dd759bc, not APPROVED on final head dc7109d (documented process deviation).
 - GPG signing: commits 58d0f76 and dc7109d signed with cvsz key 515DB3BD (email seaza@msn.com). Locally verified "Good signature"; GitHub API shows `null` (verification propagation pending).
-- Main branch protection: CONFIGURED and VERIFIED via `gh api branches/main/protection` read-back — required status checks (CI, CodeQL, dependency-review, strict), 1 required approving review, dismiss stale reviews, require code-owner reviews, enforce admins, no force-push, no deletion, required conversation resolution.
-- `INDEPENDENT_REVIEWER` repository variable: not settable via API (PUT returns 404 despite variables list returning 200 empty); classified BLOCKED. Independent review is instead enforced by the required-pull-request-reviews protection rule and policedbc's manual APPROVED review on the exact PR head.
+- Main branch protection: CONFIGURED and VERIFIED via `gh api branches/main/protection` read-back — required status checks (repository-baseline, Analyze GitHub Actions, dependency-review; strict), 1 required approving review, dismiss stale reviews, require code-owner reviews, enforce admins, no force-push, no deletion, required conversation resolution. Context names corrected to match actual CI job names after an initial merge attempt exposed a context-name mismatch.
+- Controlled merge cycle (Phase 17-18) demonstrated on PR #14 (https://github.com/cvsz/cfc-bot-manager/pull/14): cvsz GPG-signed implementation commit 45ebba3 (key 515DB3BD, `git verify-commit` Good signature); policedbc independent APPROVED review 5816944050 recorded on exact head 45ebba3; CI/CodeQL/dependency-review all SUCCESS; cvsz merged via `gh pr merge --merge` producing merge commit 9411d27 on main; post-merge validation (Go build/vet/test/race/cover, Python 25/25, validate_repo, ruff) all pass.
+- `INDEPENDENT_REVIEWER` repository variable: not settable via API (PUT returns 404 despite variables list returning 200 empty); classified BLOCKED. Independent review is enforced by the required-pull-request-reviews protection rule and policedbc's manual APPROVED review.
 
 ## Remaining blockers
 
-1. GPG signature verification on GitHub shows `null` for signed commits 58d0f76/dc7109d (key 515DB3BD uploaded to GitHub; local `git verify-commit` passes as "Good signature").
-2. policedbc independent APPROVED review was not obtained on PR #10's final head (process deviation documented). A fresh policedbc APPROVED review on the exact head of the current controlled-cycle PR is being obtained per the Phase 17-18 flow.
-3. `INDEPENDENT_REVIEWER` repository variable not settable via API (PUT returns 404); classified BLOCKED. Independent review is enforced by required-pull-request-reviews protection and policedbc's manual APPROVED review.
+1. GPG signature verification on GitHub shows `null` for older signed commits 58d0f76/dc7109d (key 515DB3BD uploaded to GitHub; local `git verify-commit` passes as "Good signature"). The controlled-cycle implementation commit 45ebba3 is locally verified as "Good signature"; GitHub-side verification propagation for new commits is pending.
+2. `INDEPENDENT_REVIEWER` repository variable not settable via API (PUT returns 404); classified BLOCKED. Independent review is enforced by required-pull-request-reviews protection and policedbc's manual APPROVED review.
+3. `/home/cvsz/.git-credentials` (mode 600) may contain real PATs/GPG passphrases; contents NOT inspected per policy. Credential revocation/rotation is an operator action and has NOT been performed or claimed.
 4. No frontend, Tauri desktop, database, or Camfrog network integration implemented (NOT IMPLEMENTED — not claimed). Production readiness NOT claimed.
