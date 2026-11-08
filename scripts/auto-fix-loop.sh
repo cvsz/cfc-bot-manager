@@ -17,7 +17,7 @@ MAX_ITER="${1:-3}"
 shift || true
 REPOS_FILTER="${*:-}"
 
-AUDIT_SCRIPT="$(dirname "$0")/audit-repo.sh"
+AUDIT_SCRIPT="$SCRIPT_ROOT/scripts/audit-repo.sh"
 LOOP_LOG="/tmp/opencode/auto-fix-loop-$(date +%s).log"
 
 echo "============================================================"
