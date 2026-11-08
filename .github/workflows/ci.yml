@@ -19,6 +19,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: backend/go.mod
+          cache: false
+
+      - name: Validate Go backend
+        working-directory: backend
+        run: |
+          go version
+          go test -race ./...
+          go vet ./...
+          go build ./...
+
       - name: Validate repository structure and Markdown links
         run: python3 scripts/validate_repo.py
 

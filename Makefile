@@ -1,15 +1,18 @@
 SHELL := /bin/sh
 
-.PHONY: help validate-template setup format lint test build security ci
+.PHONY: help validate-template setup format lint test build security ci backend-test backend-lint backend-build
 
 help:
 	@printf '%s\n' 'Targets:' \
 		'  make validate-template - Run repository structure and link validation' \
-		'  make test              - Run python unit tests' \
-		'  make lint              - Run python syntax and structure checks' \
-		'  make build             - Run compilation check on scripts' \
-		'  make security          - Run security and validation checks' \
-		'  make ci                - Run full CI validation suite'
+		'  make backend-test      - Run Go backend tests' \
+		'  make backend-lint      - Run Go vet' \
+		'  make backend-build     - Compile Go backend' \
+		'  make test              - Run all Python and Go tests' \
+		'  make lint              - Run Python and Go static checks' \
+		'  make build             - Compile Python scripts and Go backend' \
+		'  make security          - Run repository validation checks' \
+		'  make ci                - Run the full repository and backend validation suite'
 
 validate-template:
 	python3 scripts/validate_repo.py
@@ -17,15 +20,25 @@ validate-template:
 
 format:
 	python3 -m py_compile scripts/*.py tests/*.py
+	cd backend && gofmt -w $$(find . -name '*.go' -type f)
 
-lint:
+lint: backend-lint
 	python3 -m py_compile scripts/*.py tests/*.py
 	python3 scripts/validate_repo.py
 
-test:
+backend-test:
+	cd backend && go test -race ./...
+
+backend-lint:
+	cd backend && go vet ./...
+
+backend-build:
+	cd backend && go build ./...
+
+test: backend-test
 	python3 -m unittest discover -s tests -v
 
-build:
+build: backend-build
 	python3 -m py_compile scripts/*.py
 
 security:
