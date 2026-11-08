@@ -9,7 +9,7 @@ import (
 type ReadinessCheck func(context.Context) error
 
 type response struct {
-	Status string `json:"status"`
+	Status  string `json:"status"`
 	Version string `json:"version,omitempty"`
 }
 

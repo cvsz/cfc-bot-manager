@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	MethodStatus = "status"
-	MethodLanguage = "lang"
+	MethodStatus       = "status"
+	MethodLanguage     = "lang"
 	MethodSwitchPlugin = "switch_plugin"
 	MaxRPCResponseSize = 1 << 20
 )
@@ -28,9 +28,9 @@ var observedPluginIDs = map[int]struct{}{
 }
 
 type RPCRequest struct {
-	ID uint64 `json:"id"`
+	ID     uint64 `json:"id"`
 	Method string `json:"method"`
-	Params []any `json:"params"`
+	Params []any  `json:"params"`
 }
 
 // NewRPCRequest validates the observed request envelope and known parameter shapes.

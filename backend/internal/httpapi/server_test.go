@@ -13,7 +13,7 @@ func TestHealthAndReadiness(t *testing.T) {
 	handler := NewHandler("test", nil)
 	for path, expected := range map[string]string{
 		"/healthz": `"status":"ok"`,
-		"/readyz": `"status":"ready"`,
+		"/readyz":  `"status":"ready"`,
 	} {
 		recorder := httptest.NewRecorder()
 		handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, path, nil))
@@ -53,5 +53,27 @@ func TestMetadata(t *testing.T) {
 	NewHandler("v0.1.0", nil).ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/v1/meta", nil))
 	if recorder.Code != http.StatusOK || !strings.Contains(recorder.Body.String(), `"version":"v0.1.0"`) {
 		t.Fatalf("unexpected metadata response: %d %q", recorder.Code, recorder.Body.String())
+	}
+}
+
+func TestUnknownPathReturns404(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	NewHandler("test", nil).ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/no/such/path", nil))
+	if recorder.Code != http.StatusNotFound {
+		t.Fatalf("unknown path must return 404, got %d", recorder.Code)
+	}
+}
+
+func TestSecurityHeadersPresent(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	NewHandler("test", nil).ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+	if recorder.Header().Get("X-Content-Type-Options") != "nosniff" {
+		t.Fatal("missing X-Content-Type-Options: nosniff")
+	}
+	if recorder.Header().Get("Content-Security-Policy") == "" {
+		t.Fatal("missing Content-Security-Policy header")
+	}
+	if recorder.Header().Get("Referrer-Policy") != "no-referrer" {
+		t.Fatal("missing Referrer-Policy: no-referrer")
 	}
 }
