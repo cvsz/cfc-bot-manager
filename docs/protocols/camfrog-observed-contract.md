@@ -99,3 +99,8 @@ Captured language identifiers include en_US, es_ES, fr_FR, nl_NL, it_IT, id_ID, 
 ## Required future evidence
 
 For every supported product/version: sanitized request/response fixtures, authorized test account, success and failure cases, timeout behavior, session expiry behavior, validation behavior, and compatibility test results. Cloud Bot and legacy standalone bot must be represented as separate product targets.
+
+
+## Safety exclusion
+
+Plugin ID 9 ("Roulette") is retained here solely as a historical configuration-page observation. It must remain disabled in CFC Bot Manager; this project does not implement or facilitate wagering, betting, stakes, payouts, or gambling workflows.

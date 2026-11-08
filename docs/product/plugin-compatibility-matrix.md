@@ -46,3 +46,8 @@ A capability may be marked VERIFIED only with:
 - independent test evidence reviewed in the PR.
 
 Until then, clients must show the capability as unavailable/unverified and must not expose an action that implies it is supported.
+
+
+## Safety exclusion
+
+Plugin ID 9 is listed only because its configuration page appeared in a supplied capture. It is not an enabled or supported product capability. The product must not expose wagering, betting, stakes, payouts, or gambling workflows. Keep ID 9 disabled unless independent evidence establishes a strictly non-wagering use case and the scope is reviewed for age-appropriate safety.
