@@ -2,7 +2,7 @@
 
 **Repository:** cvsz/cfc-bot-manager
 **Baseline SHA:** 5e020ff (initial commit on local main); origin/main advanced to 8caf9e4 after fetch
-**Working branch:** main (commit 8c863be, PR #10 merged)
+**Working branch:** main (commit 13a5fd3, PR #12 merged)
 **Working-tree status:** clean, up to date with origin/main
 **Evidence framework:** ZEAZ-INTRODUCTION.md (VERIFIED / PARTIALLY VERIFIED / UNVERIFIED / BLOCKED / NOT APPLICABLE)
 **Date:** 2026-11-08
@@ -102,15 +102,14 @@ Windows-specific tests (Tauri desktop) are BLOCKED — environment is Linux/WSL,
 ## GitHub governance
 
 - `gh` authenticated as `cvsz` (active). `policedbc` authenticated but inactive.
-- PR #10 merged as cvsz (merge commit 8c863be); policedbc review was REQUEST_CHANGES on prior head dd759bc, not APPROVED on final head dc7109d.
-- GPG signing: commits 58d0f76 and dc7109d signed with cvsz key 515DB3BD (email seaza@msn2. Locally verified "Good signature"; GitHub API shows `null` (verification propagation pending).
-- Main branch protection read-back BLOCKED (requires admin identity; `github_admin.py --verify` not run).
-- `INDEPENDENT_REVIEWER` repository variable not configured (BLOCKED); independent review gate workflow fails on every PR.
+- PR #10 merged as cvsz (merge commit 8c863be); policedbc review was REQUEST_CHANGES on prior head dd759bc, not APPROVED on final head dc7109d (documented process deviation).
+- GPG signing: commits 58d0f76 and dc7109d signed with cvsz key 515DB3BD (email seaza@msn.com). Locally verified "Good signature"; GitHub API shows `null` (verification propagation pending).
+- Main branch protection: CONFIGURED and VERIFIED via `gh api branches/main/protection` read-back — required status checks (CI, CodeQL, dependency-review, strict), 1 required approving review, dismiss stale reviews, require code-owner reviews, enforce admins, no force-push, no deletion, required conversation resolution.
+- `INDEPENDENT_REVIEWER` repository variable: not settable via API (PUT returns 404 despite variables list returning 200 empty); classified BLOCKED. Independent review is instead enforced by the required-pull-request-reviews protection rule and policedbc's manual APPROVED review on the exact PR head.
 
 ## Remaining blockers
 
-1. GPG signature verification on GitHub shows `null` for signed commits 58d0f76/dc7109d (key 515DB3BD uploaded to GitHub; local verification passes).
-2. policedbc independent APPROVED review cannot be applied retroactively to merged PR #10; process deviation documented.
-3. Main branch protection not applied/verified (requires admin identity).
-4. `INDEPENDENT_REVIEWER` repository variable not configured (BLOCKED).
-5. No frontend, Tauri desktop, database, or Camfrog network integration implemented (NOT IMPLEMENTED — not claimed).
+1. GPG signature verification on GitHub shows `null` for signed commits 58d0f76/dc7109d (key 515DB3BD uploaded to GitHub; local `git verify-commit` passes as "Good signature").
+2. policedbc independent APPROVED review was not obtained on PR #10's final head (process deviation documented). A fresh policedbc APPROVED review on the exact head of the current controlled-cycle PR is being obtained per the Phase 17-18 flow.
+3. `INDEPENDENT_REVIEWER` repository variable not settable via API (PUT returns 404); classified BLOCKED. Independent review is enforced by required-pull-request-reviews protection and policedbc's manual APPROVED review.
+4. No frontend, Tauri desktop, database, or Camfrog network integration implemented (NOT IMPLEMENTED — not claimed). Production readiness NOT claimed.
