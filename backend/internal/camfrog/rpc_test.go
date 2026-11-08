@@ -34,6 +34,9 @@ func TestSwitchPluginRejectsUnknownIDAndBadTypes(t *testing.T) {
 	if _, err := NewRPCRequest(1, MethodSwitchPlugin, []any{16, true}); err != nil {
 		t.Fatalf("observed plugin rejected: %v", err)
 	}
+	if _, err := NewRPCRequest(1, MethodSwitchPlugin, []any{9, true}); err == nil {
+		t.Fatal("roulette plugin must remain disabled until non-wagering behavior is verified")
+	}
 	if _, err := NewRPCRequest(1, MethodSwitchPlugin, []any{10, true}); err == nil {
 		t.Fatal("unidentified plugin 10 must be rejected")
 	}
