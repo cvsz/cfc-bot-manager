@@ -1,7 +1,7 @@
 # Production Readiness — cfc-bot-manager
 
 **Date:** 2026-11-08
-**Verdict:** NOT PRODUCTION READY. The repository is a governance/tooling baseline with one Go backend vertical slice; the Camf Bot Manager application (frontend, desktop, database, Camfrog integration, authn/authz, deployment) is NOT IMPLEMENTED.
+**Verdict:** NOT PRODUCTION READY. The repository is a governance/tooling baseline with one Go backend vertical slice; PR #10 (P0 Issue #5 remediation) has been merged to main (merge commit 8c863be). The Camf Bot Manager application (frontend, desktop, database, Camfrog integration, authn/authz, deployment) is NOT IMPLEMENTED.
 
 Per ZEAZ-INTRODUCTION.md: production readiness is an evidence-backed assessment across governance, security, reliability, data integrity, CI/CD, reproducibility, deployment, observability, backup/restore, DR, rollback, performance, capacity, documentation, incident response, ownership, and compliance. Green CI alone is insufficient.
 
@@ -10,7 +10,7 @@ Per ZEAZ-INTRODUCTION.md: production readiness is an evidence-backed assessment 
 | Gate | State | Evidence / reason |
 |------|-------|-------------------|
 | Repository governance (AGENTS.md, SECURITY.md, GOVERNANCE.md) | VERIFIED (docs present) | Baseline docs exist |
-| Protected default branch | BLOCKED | `github_admin.py --verify` not run; `INDEPENDENT_REVIEWER` not configured |
+| Protected default branch | BLOCKED | `github_admin.py --verify` not run; `INDEPENDENT_REVIEWER` not configured; independent review gate workflow fails on every PR |
 | PR review before merge | PARTIALLY VERIFIED | `request-independent-review.yml` present; reviewer var not configured; PRs #1/#2 self-approved; #9 unreviewed |
 | Required status checks | PARTIALLY VERIFIED | CI workflow present; `verify-independent-approval` not enforceable (var missing) |
 | CODEOWNERS review | PARTIALLY VERIFIED | CODEOWNERS present (@cvsz); not verified effective |
