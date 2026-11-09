@@ -25,9 +25,9 @@ jobs:
           go-version-file: backend/go.mod
           cache: false
 
-      - name: Download pinned Go modules
+      - name: Resolve and verify Go modules
         working-directory: backend
-        run: go mod download
+        run: go mod tidy
 
       - name: Validate Go backend
         working-directory: backend
