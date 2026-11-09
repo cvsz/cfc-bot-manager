@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: help validate-template setup format lint test build security ci backend-test backend-lint backend-build
+.PHONY: help validate-template setup format lint test build security ci backend-test backend-lint backend-build db-migrate
 
 help:
 	@printf '%s\n' 'Targets:' \
@@ -8,6 +8,7 @@ help:
 		'  make backend-test      - Run Go backend tests' \
 		'  make backend-lint      - Run Go vet' \
 		'  make backend-build     - Compile Go backend' \
+		'  make db-migrate        - Apply PostgreSQL migrations (requires DATABASE_URL)' \
 		'  make test              - Run all Python and Go tests' \
 		'  make lint              - Run Python and Go static checks' \
 		'  make build             - Compile Python scripts and Go backend' \
@@ -34,6 +35,9 @@ backend-lint:
 
 backend-build:
 	cd backend && go build ./...
+
+db-migrate:
+	cd backend && go run ./cmd/migrate
 
 test: backend-test
 	python3 -m unittest discover -s tests -v
