@@ -25,6 +25,10 @@ jobs:
           go-version-file: backend/go.mod
           cache: false
 
+      - name: Download pinned Go modules
+        working-directory: backend
+        run: go mod download
+
       - name: Validate Go backend
         working-directory: backend
         run: |
