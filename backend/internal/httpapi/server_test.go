@@ -10,7 +10,7 @@ import (
 )
 
 func TestHealthAndReadiness(t *testing.T) {
-	handler := NewHandler("test", nil)
+	handler := NewHandler("test", nil, nil)
 	for path, expected := range map[string]string{
 		"/healthz": `"status":"ok"`,
 		"/readyz":  `"status":"ready"`,
@@ -29,7 +29,7 @@ func TestHealthAndReadiness(t *testing.T) {
 func TestReadinessFailureReturns503WithoutLeakingError(t *testing.T) {
 	handler := NewHandler("test", func(context.Context) error {
 		return errors.New("database credential must not leak")
-	})
+	}, nil)
 	recorder := httptest.NewRecorder()
 	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/readyz", nil))
 	if recorder.Code != http.StatusServiceUnavailable {
@@ -42,7 +42,7 @@ func TestReadinessFailureReturns503WithoutLeakingError(t *testing.T) {
 
 func TestMutatingMethodRejected(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	NewHandler("test", nil).ServeHTTP(recorder, httptest.NewRequest(http.MethodPost, "/healthz", nil))
+	NewHandler("test", nil, nil).ServeHTTP(recorder, httptest.NewRequest(http.MethodPost, "/healthz", nil))
 	if recorder.Code != http.StatusMethodNotAllowed || recorder.Header().Get("Allow") != http.MethodGet {
 		t.Fatalf("unexpected response: status=%d allow=%q", recorder.Code, recorder.Header().Get("Allow"))
 	}
@@ -50,7 +50,7 @@ func TestMutatingMethodRejected(t *testing.T) {
 
 func TestMetadata(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	NewHandler("v0.1.0", nil).ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/v1/meta", nil))
+	NewHandler("v0.1.0", nil, nil).ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/v1/meta", nil))
 	if recorder.Code != http.StatusOK || !strings.Contains(recorder.Body.String(), `"version":"v0.1.0"`) {
 		t.Fatalf("unexpected metadata response: %d %q", recorder.Code, recorder.Body.String())
 	}
@@ -58,7 +58,7 @@ func TestMetadata(t *testing.T) {
 
 func TestUnknownPathReturns404(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	NewHandler("test", nil).ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/no/such/path", nil))
+	NewHandler("test", nil, nil).ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/no/such/path", nil))
 	if recorder.Code != http.StatusNotFound {
 		t.Fatalf("unknown path must return 404, got %d", recorder.Code)
 	}
@@ -66,7 +66,7 @@ func TestUnknownPathReturns404(t *testing.T) {
 
 func TestSecurityHeadersPresent(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	NewHandler("test", nil).ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+	NewHandler("test", nil, nil).ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/healthz", nil))
 	if recorder.Header().Get("X-Content-Type-Options") != "nosniff" {
 		t.Fatal("missing X-Content-Type-Options: nosniff")
 	}

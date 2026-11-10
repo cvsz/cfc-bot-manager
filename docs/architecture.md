@@ -92,7 +92,18 @@ deployments/
 
 Observed pages show a JSON RPC POST to `/bot/ajax/` with `{id, method, params}`, as well as separate multipart form submissions. These are observed interfaces, not a published supported SDK. See [observed contract](protocols/camfrog-observed-contract.md).
 
+**Critical Finding from Reverse Engineering:** Static analysis of `camfrog.exe` (SHA-256: `0b744602c004536dcf81e9965e8cb17358eb276b3876a1e70c50f72777c27e06`) confirms that **Camfrog Desktop Client does NOT support rich text in outgoing chat messages**. All messages sent via UI Automation are plain text only. The adapter must not attempt to send HTML/CSS/rich text formatting.
+
+Evidence from static RE:
+- Only 3 GDI font APIs imported: `CreateFontIndirectW`, `EnumFontFamiliesExW`, `ChooseFontW`
+- No HTML/CSS parsing libraries imported (`mshtml.dll`, `riched20.dll`, `msftedit.dll` not imported)
+- HTML/CSS strings found are used **only for rendering incoming messages** in embedded web view
+- Chat messages sent via UI Automation are plain text only (verified in UIA adapter send path)
+- Camfrog uses `camfrog:room:openvideo:` custom URI scheme for room links
+
 The adapter must preserve wire compatibility in transport DTOs and translate into typed domain values. Unknown fields and semantics are not to be guessed. Contract fixtures must be sanitized and contain no cookies, session identifiers, or room keys.
+
+**Outgoing messages are plain text only — the adapter must not attempt to send HTML/CSS/rich text formatting.**
 
 ## Authentication and authorization
 

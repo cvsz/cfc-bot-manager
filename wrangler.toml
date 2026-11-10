@@ -1,0 +1,38 @@
+name = "cfc-bot-manager"
+main = "src/index.ts"
+compatibility_date = "2026-11-09"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+ENVIRONMENT = "production"
+
+[[durable_objects.bindings]]
+name = "BOT_STATE"
+class_name = "BotStateDO"
+
+[[durable_objects.bindings]]
+name = "ROOM_STATE"
+class_name = "RoomStateDO"
+
+[[kv_namespaces]]
+binding = "BOT_CONFIG"
+id = "your-kv-namespace-id"
+preview_id = "your-preview-kv-namespace-id"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "cfc-bot-manager-db"
+database_id = "your-d1-database-id"
+
+[observability]
+enabled = true
+traces = { enabled = true, sampling_rate = 0.1 }
+logs = { enabled = true }
+
+[build]
+command = "npm run build"
+watch_dir = "src"
+
+[dev]
+port = 8787
+ip = "127.0.0.1"

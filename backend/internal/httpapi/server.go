@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"io/fs"
 	"net/http"
+
+	"github.com/cvsz/cfc-bot-manager/backend/internal/repository"
 )
 
 //go:embed web/*
@@ -18,7 +20,7 @@ type response struct {
 	Version string `json:"version,omitempty"`
 }
 
-func NewHandler(version string, readiness ReadinessCheck, roomStyles ...http.Handler) http.Handler {
+func NewHandler(version string, readiness ReadinessCheck, repo repository.RepositoryProvider, roomStyles ...http.Handler) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", getOnly(func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, response{Status: "ok"})
@@ -41,6 +43,17 @@ func NewHandler(version string, readiness ReadinessCheck, roomStyles ...http.Han
 	if sub, err := fs.Sub(editorFiles, "web"); err == nil {
 		mux.Handle("/room-style-editor/", http.StripPrefix("/room-style-editor/", http.FileServer(http.FS(sub))))
 	}
+
+	// Create WebSocket hub and camfrog handler
+	wsHub := NewWSHub(repo)
+	camfrogHandler := NewCamfrogHandler(repo, wsHub)
+
+	// Register camfrog handler for /api/v1/ routes
+	mux.Handle("/api/v1/", camfrogHandler)
+
+	// WebSocket endpoint for real-time bot updates
+	mux.Handle("/api/v1/ws", WebSocketHandler(repo))
+
 	if len(roomStyles) > 0 && roomStyles[0] != nil {
 		mux.Handle("/api/v1/", roomStyles[0])
 	}
