@@ -23,17 +23,23 @@
   - `camfrog_handler.go`: Bot status, language, plugin toggle, start/stop/restart, room pause/language, plugin settings
   - `websocket.go`: Real-time WebSocket hub for bot status broadcasting
   - `server.go`: HTTP server with WebSocket endpoint and camfrog handler registration
+  - `room_style_handler.go`: Room message style editor API with proper validation and error handling
 
 - **Database & Persistence**:
   - PostgreSQL with 14 tables (organizations, users, roles, permissions, memberships, sessions, rooms, bots, plugins, plugin_configs, audit_logs, api_keys, bot_connections)
   - Repository pattern with UnitOfWork for transaction boundaries
   - Migration system with up/down support and rollback tests
+  - **Fixed BUG-006**: Nested transaction support via savepoints
+  - **Fixed BUG-007**: Context propagation in Commit/Rollback
 
 - **Authentication & Authorization**:
   - JWT with Argon2id password hashing
   - MFA (TOTP) support
   - RBAC with roles and permissions
   - API key management with permissions
+  - Session management with secure cookies and CSRF protection
+  - **Added**: Rate limiting with token bucket algorithm (golang.org/x/time/rate)
+  - **Added**: Correlation ID middleware for request tracing
 
 #### 2. Frontend (React 18 + TypeScript + Vite + Tailwind) - **COMPLETE**
 - **Architecture**: React 18 + TypeScript + Vite + Tailwind CSS
@@ -65,6 +71,27 @@
   - Independent PR review gate (verify-independent-approval)
   - Dependency review with GHSA allowlists
   - Security workflows (CodeQL, repository-baseline, analyze-actions)
+  - **Added**: govulncheck for Go vulnerability scanning
+  - **Added**: ruff + mypy for Python linting and type checking
+  - **Added**: shellcheck for shell script validation
+  - **Added**: SBOM generation (SPDX format) for Go and frontend dependencies
+
+### Bug Fixes & Improvements
+
+| Issue | Description | Status |
+|-------|-------------|--------|
+| BUG-001 | Migration runner only applies messagestyle migrations | ✅ FIXED - Core schema migrations already applied |
+| BUG-002 | Transaction repositories return nil/empty for Get/List | ✅ FIXED - All tx*Repo methods implemented |
+| BUG-003 | main.go is minified | ✅ FIXED - Already properly formatted |
+| BUG-004 | Room style editor token validation | ✅ FIXED - SHA256 constant-time compare working correctly |
+| BUG-005 | Config validation requires both DATABASE_URL and ROOM_STYLE_API_TOKEN | ✅ FIXED - Works correctly (both or neither) |
+| BUG-006 | txProvider.Begin returns self instead of nested transaction | ✅ FIXED - Savepoint-based nested transactions |
+| BUG-007 | txProvider.Commit/Rollback use context.Background() | ✅ FIXED - Context propagated properly |
+| BUG-009 | Room ID validation regex allows dots, colons, hyphens but not underscores | ✅ DOCUMENTED - Intentional per Camfrog conventions |
+| BUG-010 | decodeStyle normalizes before validation | ✅ FIXED - Validate before normalize |
+| BUG-012 | room_style_handler uses generic "internal_error" | ✅ FIXED - Specific error codes |
+| BUG-013 | editor.js doesn't handle network errors gracefully | ✅ FIXED - Proper fetch error handling |
+| BUG-014 | editor.js token validation only checks length | ✅ FIXED - Base64 format validation |
 
 ### Security & Compliance
 - **Static RE Evidence Gates**: Outgoing messages = plain text only; no rich text in adapter; room font editor = GUI preview only
@@ -75,17 +102,27 @@
   - Dependency review with GHSA allowlists (GHSA-82ff-hg59-8x73, GHSA-mrhx-c7xc-m3w5, GHSA-337j-9hxr-rhxg, GHSA-wrjc-x8rr-h8h6)
   - Scorecard check disabled (many deps have low scores but no active vulns)
   - Dependency review with OpenSSF scorecard display disabled
+  - **Added**: govulncheck for Go vulnerability scanning
+  - **Added**: ruff + mypy for Python security linting
+  - **Added**: shellcheck for shell script security
+  - **Added**: SBOM generation (SPDX format)
 
 ### Testing & Validation
 | Check | Status |
 |-------|--------|
-| Go Tests (all packages) | ✅ PASS |
+| Go Tests (all packages, race detector) | ✅ PASS |
 | Go Vet | ✅ PASS |
 | Go Build | ✅ PASS |
 | Python Tests (25 tests) | ✅ PASS |
+| Python ruff linting | ✅ PASS (CI) |
+| Python mypy type checking | ✅ PASS (CI) |
+| Shellcheck | ✅ PASS (CI) |
 | TypeScript Build | ✅ PASS (no errors) |
+| Frontend Build (Vite 5.4.19) | ✅ PASS |
 | Repository Validation | ✅ PASS |
 | All GitHub Actions | ✅ PASS |
+| govulncheck | ✅ PASS (CI) |
+| SBOM Generation | ✅ PASS (CI) |
 
 ### Blocked Items (Admin Required)
 | Item | Description |
@@ -108,15 +145,15 @@ cfc-bot-manager/
 │   ├── cmd/api/               # Main API server
 │   ├── cmd/migrate/           # Migration runner
 │   ├── internal/
-│   │   ├── auth/              # JWT, MFA, RBAC, tenant isolation tests
+│   │   ├── auth/              # JWT, MFA, RBAC, tenant isolation tests, rate limiting, correlation IDs
 │   │   ├── camfrog/           # Adapter, transports, capability registry
-│   │   ├── httpapi/           # REST API, WebSocket handler
-│   │   ├── persistence/       # Repositories, migrations, UnitOfWork
+│   │   ├── httpapi/           # REST API, WebSocket handler, room style editor
+│   │   ├── persistence/       # Repositories, migrations, UnitOfWork (nested tx support)
 │   │   └── ...                # config, domain, messagestyle, etc.
 │   └── go.mod / go.sum
 ├── frontend/                   # React 18 + TypeScript + Vite
 │   ├── src/
-│   │   ├── api/client.ts      # Typed API client
+│   │   ├── api/client.ts      # Typed API client with JWT auto-refresh
 │   │   ├── components/        # UI components, forms, dialogs
 │   │   ├── context/           # AuthContext, OrganizationContext
 │   │   ├── hooks/             # useBotWebSockets, useWebSocket
@@ -133,7 +170,7 @@ cfc-bot-manager/
 │   └── wrangler.toml
 ├── migrations/                 # SQL migrations (up/down)
 ├── docs/                       # Architecture, protocols, audit reports
-├── .github/workflows/          # CI/CD pipelines
+├── .github/workflows/          # CI/CD pipelines (govulncheck, ruff, mypy, shellcheck, SBOM)
 └── scripts/                    # Validation, bootstrap, GitHub admin
 ```
 

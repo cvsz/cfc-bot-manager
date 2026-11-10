@@ -4,8 +4,13 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strconv"
+	"strings"
+	"sync"
 
 	"github.com/cvsz/cfc-bot-manager/backend/internal/domain"
+	"golang.org/x/time/rate"
+	"github.com/google/uuid"
 )
 
 // Context keys for storing auth data
@@ -221,23 +226,78 @@ type RateLimitConfig struct {
 	Burst             int
 }
 
-// RateLimiter provides basic rate limiting
+// RateLimiter provides rate limiting using token bucket algorithm
 type RateLimiter struct {
-	config RateLimitConfig
-	// In production, use a proper rate limiter like golang.org/x/time/rate
+	limiters map[string]*rate.Limiter
+	mu       sync.Mutex
+	config   RateLimitConfig
 }
 
 // NewRateLimiter creates a new rate limiter
 func NewRateLimiter(config RateLimitConfig) *RateLimiter {
-	return &RateLimiter{config: config}
+	return &RateLimiter{
+		limiters: make(map[string]*rate.Limiter),
+		config:   config,
+	}
 }
 
-// RateLimitMiddleware provides basic rate limiting
+func (rl *RateLimiter) getLimiter(key string) *rate.Limiter {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
+	limiter, exists := rl.limiters[key]
+	if !exists {
+		limiter = rate.NewLimiter(rate.Limit(rl.config.RequestsPerMinute)/60, rl.config.Burst)
+		rl.limiters[key] = limiter
+	}
+	return limiter
+}
+
+// RateLimitMiddleware provides rate limiting based on client IP
 func (rl *RateLimiter) RateLimitMiddleware(next http.Handler) http.Handler {
-	// Simplified - in production use a proper rate limiter
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Get client IP
+		ip := r.RemoteAddr
+		if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
+			ip = strings.Split(forwarded, ",")[0]
+		}
+
+		limiter := rl.getLimiter(ip)
+		if !limiter.Allow() {
+			w.Header().Set("X-RateLimit-Limit", strconv.Itoa(rl.config.RequestsPerMinute))
+			w.Header().Set("X-RateLimit-Remaining", "0")
+			http.Error(w, "rate limit exceeded", http.StatusTooManyRequests)
+			return
+		}
+
+		w.Header().Set("X-RateLimit-Limit", strconv.Itoa(rl.config.RequestsPerMinute))
+		w.Header().Set("X-RateLimit-Remaining", strconv.Itoa(rl.config.Burst))
+
 		next.ServeHTTP(w, r)
 	})
+}
+
+// CorrelationIDMiddleware adds correlation ID to requests for tracing
+func CorrelationIDMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		correlationID := r.Header.Get("X-Correlation-ID")
+		if correlationID == "" {
+			correlationID = uuid.New().String()
+		}
+		w.Header().Set("X-Correlation-ID", correlationID)
+		ctx := context.WithValue(r.Context(), correlationIDKey{}, correlationID)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+type correlationIDKey struct{}
+
+// GetCorrelationID retrieves the correlation ID from context
+func GetCorrelationID(ctx context.Context) string {
+	if id, ok := ctx.Value(correlationIDKey{}).(string); ok {
+		return id
+	}
+	return ""
 }
 
 // AuditLogMiddleware logs requests for audit purposes

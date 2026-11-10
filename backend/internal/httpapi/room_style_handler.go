@@ -14,6 +14,7 @@ import (
 )
 
 var roomIDPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$`)
+// Note: underscores are intentionally excluded per Camfrog room naming conventions
 
 type roomStyleResponse struct {
 	Style  messagestyle.Style `json:"style"`
@@ -29,7 +30,7 @@ func NewRoomStyleHandler(store messagestyle.Store, token string) http.Handler {
 	mux.HandleFunc("GET /api/v1/message-style/default", func(w http.ResponseWriter, r *http.Request) {
 		v, err := store.GetDefault(r.Context())
 		if err != nil {
-			writeAPIError(w, http.StatusInternalServerError, "internal_error")
+			writeAPIError(w, http.StatusInternalServerError, "failed_to_get_default_style")
 			return
 		}
 		writeAPIJSON(w, http.StatusOK, roomStyleResponse{v, "global_default"})
@@ -40,7 +41,7 @@ func NewRoomStyleHandler(store messagestyle.Store, token string) http.Handler {
 			return
 		}
 		if err := store.SaveDefault(r.Context(), v); err != nil {
-			writeAPIError(w, http.StatusInternalServerError, "internal_error")
+			writeAPIError(w, http.StatusInternalServerError, "failed_to_save_default_style")
 			return
 		}
 		writeAPIJSON(w, http.StatusOK, roomStyleResponse{v, "global_default"})
@@ -53,7 +54,7 @@ func NewRoomStyleHandler(store messagestyle.Store, token string) http.Handler {
 		}
 		v, found, err := store.GetRoom(r.Context(), id)
 		if err != nil {
-			writeAPIError(w, http.StatusInternalServerError, "internal_error")
+			writeAPIError(w, http.StatusInternalServerError, "failed_to_get_room_style")
 			return
 		}
 		source := "room"
@@ -62,7 +63,7 @@ func NewRoomStyleHandler(store messagestyle.Store, token string) http.Handler {
 			source = "global_default"
 		}
 		if err != nil {
-			writeAPIError(w, http.StatusInternalServerError, "internal_error")
+			writeAPIError(w, http.StatusInternalServerError, "failed_to_get_default_style")
 			return
 		}
 		writeAPIJSON(w, http.StatusOK, roomStyleResponse{v, source})
@@ -78,7 +79,7 @@ func NewRoomStyleHandler(store messagestyle.Store, token string) http.Handler {
 			return
 		}
 		if err := store.SaveRoom(r.Context(), id, v); err != nil {
-			writeAPIError(w, http.StatusInternalServerError, "internal_error")
+			writeAPIError(w, http.StatusInternalServerError, "failed_to_save_room_style")
 			return
 		}
 		writeAPIJSON(w, http.StatusOK, roomStyleResponse{v, "room"})
@@ -90,12 +91,12 @@ func NewRoomStyleHandler(store messagestyle.Store, token string) http.Handler {
 			return
 		}
 		if err := store.DeleteRoom(r.Context(), id); err != nil {
-			writeAPIError(w, http.StatusInternalServerError, "internal_error")
+			writeAPIError(w, http.StatusInternalServerError, "failed_to_delete_room_style")
 			return
 		}
 		v, err := store.GetDefault(r.Context())
 		if err != nil {
-			writeAPIError(w, http.StatusInternalServerError, "internal_error")
+			writeAPIError(w, http.StatusInternalServerError, "failed_to_get_default_style")
 			return
 		}
 		writeAPIJSON(w, http.StatusOK, roomStyleResponse{v, "global_default"})
@@ -147,6 +148,13 @@ func decodeStyle(w http.ResponseWriter, r *http.Request) (messagestyle.Style, bo
 		writeAPIError(w, http.StatusBadRequest, "invalid_json")
 		return messagestyle.Style{}, false
 	}
+
+	// Validate style before normalizing to avoid extra work on invalid input
+	if err := style.Validate(); err != nil {
+		writeAPIError(w, http.StatusUnprocessableEntity, "invalid_style")
+		return messagestyle.Style{}, false
+	}
+
 	normalized, err := style.Normalize()
 	if err != nil {
 		writeAPIError(w, http.StatusUnprocessableEntity, "invalid_style")
