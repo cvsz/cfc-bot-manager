@@ -8,26 +8,29 @@ This plan prioritizes a verifiable vertical slice over creating a large empty mo
 - [x] Preserve the inherited repository governance contract.
 - [x] Record observed Camfrog transport and plugin evidence boundaries.
 - [x] Mark plugin ID 10 as UNVERIFIED.
+- [x] **Integrate Static RE evidence from camfrog.exe reverse engineering** (SHA-256: `0b744602c004536dcf81e9965e8cb17358eb276b3876a1e70c50f72777c27e06`)
 - [ ] Complete ADR review and scope sign-off.
 
 ## Phase 1 — Backend foundation
 
-- [ ] Create Go module and pinned toolchain.
-- [ ] Add configuration loader with strict validation and safe secret sourcing.
-- [ ] Add health/readiness and structured logging with redaction.
-- [ ] Define domain entities and repository interfaces.
-- [ ] Add PostgreSQL schema/migrations and transaction boundaries.
-- [ ] Implement authentication, session rotation, CSRF, MFA capability, and server-side RBAC.
-- [ ] Add resource/tenant isolation tests before exposing CRUD endpoints.
+- [x] Create Go module and pinned toolchain (Go 1.25).
+- [x] Add configuration loader with strict validation and safe secret sourcing.
+- [x] Add health/readiness and structured logging with redaction.
+- [x] Define domain entities and repository interfaces.
+- [x] Add PostgreSQL schema/migrations and transaction boundaries.
+- [x] Implement authentication, session rotation, CSRF, MFA capability, and server-side RBAC.
+- [x] Add resource/tenant isolation tests before exposing CRUD endpoints.
+- [ ] Transaction boundaries & rollback strategy (P1-08).
 
 ## Phase 2 — Protocol adapter
 
-- [ ] Define CamfrogAdapter interface and capability model.
-- [ ] Separate JSON RPC and multipart settings transports.
-- [ ] Implement request IDs, timeout, cancellation, response validation, and session handling.
-- [ ] Add sanitized contract fixtures and fake-server tests.
-- [ ] Verify protocol behavior only in an authorized environment.
-- [ ] Keep unknown/unverified capabilities disabled.
+- [x] Define CamfrogAdapter interface and capability model.
+- [x] Separate JSON RPC and multipart settings transports.
+- [x] Implement request IDs, timeout, cancellation, response validation, and session handling.
+- [x] Add sanitized contract fixtures and fake-server tests (P2-04).
+- [ ] Verify protocol behavior only in an authorized environment (P2-05).
+- [x] Keep unknown/unverified capabilities disabled (P2-06).
+- [ ] **Integrate Static RE evidence into adapter**: outgoing messages = plain text only; no rich text support; HTML/CSS for incoming rendering only; camfrog:room:openvideo: URI scheme for room links; Registry-based IM font settings (IMFont, IMFontSize, FontName, Size).
 
 ## Phase 3 — Web control panel
 
@@ -36,6 +39,7 @@ This plan prioritizes a verifiable vertical slice over creating a large empty mo
 - [ ] Dashboard, bot/room inventory, plugin capability/settings, activity, user/role, profile, and settings views.
 - [ ] WebSocket status updates with reconnect/backoff and stale-state handling.
 - [ ] Accessible forms, validation, loading/empty/error states.
+- [x] **Room message font editor (GUI preview only)** — clearly labeled as preview; adapter sends plain text only.
 
 ## Phase 4 — Windows desktop
 
@@ -57,3 +61,9 @@ This plan prioritizes a verifiable vertical slice over creating a large empty mo
 ## Dependency order
 
 Backend contracts and authorization precede client feature work. Protocol transport is isolated and tested before any UI control claims a feature is available. Do not build plugin forms from assumptions where field semantics are incomplete.
+
+**Static RE evidence gates:**
+- Outgoing messages = plain text only (adapter must enforce)
+- No rich text support in adapter (no HTML/CSS formatting)
+- Room message font editor = GUI preview only (clearly labeled)
+- Plugin capabilities default to UNVERIFIED/DISABLED until VERIFIED

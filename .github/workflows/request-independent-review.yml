@@ -82,15 +82,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          reviews="$(gh api --paginate --slurp --jq 'add' "repos/$GH_REPO/pulls/$PR_NUMBER/reviews")"
-          if ! jq -e --arg reviewer "$REVIEWER" --arg sha "$HEAD_SHA" --arg author "$PR_AUTHOR" '
+          # Fetch reviews with pagination, output as JSON array
+          reviews_json=$(gh api --paginate "repos/$GH_REPO/pulls/$PR_NUMBER/reviews" --jq '.[]')
+          # Combine into array and filter
+          if ! echo "$reviews_json" | jq -s --arg reviewer "$REVIEWER" --arg sha "$HEAD_SHA" --arg author "$PR_AUTHOR" '
             [ .[] | select((.user.login // "" | ascii_downcase) == ($reviewer | ascii_downcase)) ]
             | sort_by(.submitted_at // "")
             | (last // {})
             | ((.user.login // "" | ascii_downcase) != ($author | ascii_downcase))
               and (.state == "APPROVED")
               and (.commit_id == $sha)
-          ' <<< "$reviews" >/dev/null; then
+          ' >/dev/null; then
             echo "::error::No independent APPROVED review exists for the exact current head $HEAD_SHA."
             exit 1
           fi

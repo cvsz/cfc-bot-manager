@@ -21,7 +21,7 @@ func TestNewServerAppliesConfiguration(t *testing.T) {
 		Idle:       60 * time.Second,
 		Shutdown:   10 * time.Second,
 	}
-	server := NewServer(cfg, "test", nil)
+	server := NewServer(cfg, "test", nil, nil)
 
 	if server.Addr != "127.0.0.1:0" {
 		t.Fatalf("server addr = %q, want %q", server.Addr, "127.0.0.1:0")
@@ -66,7 +66,7 @@ func TestServerStartsAndResponds(t *testing.T) {
 		Idle:       60 * time.Second,
 		Shutdown:   10 * time.Second,
 	}
-	server := NewServer(cfg, "test", nil)
+	server := NewServer(cfg, "test", nil, nil)
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -109,7 +109,7 @@ func TestGracefulShutdownCompletes(t *testing.T) {
 		Idle:       60 * time.Second,
 		Shutdown:   5 * time.Second,
 	}
-	server := NewServer(cfg, "test", nil)
+	server := NewServer(cfg, "test", nil, nil)
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -155,7 +155,7 @@ func TestReadinessFailureReturns503(t *testing.T) {
 		Shutdown:   10 * time.Second,
 	}, "test", func(context.Context) error {
 		return errors.New("readiness check failed")
-	})
+	}, nil)
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {

@@ -46,6 +46,7 @@ Web and Windows desktop clients use the same API contracts, authorization semant
 - Guessing plugin ID 10's identity or behavior.
 - Automatic moderation/ban actions without verified semantics, explicit authorization, and safe operational controls.
 - Cloud deployment or public DNS changes as part of application implementation.
+- **Sending rich-text messages (bold, italic, underline, color, font size, font family) to Camfrog rooms** — RE evidence confirms outgoing messages are plain text only. The room message font editor is GUI preview only.
 
 ## Acceptance criteria
 
