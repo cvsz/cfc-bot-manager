@@ -198,8 +198,8 @@ type BotConnectionRepository interface {
 // UnitOfWork defines transaction boundary for multiple repositories
 type UnitOfWork interface {
 	Begin(ctx context.Context) (UnitOfWork, error)
-	Commit() error
-	Rollback() error
+	Commit(ctx context.Context) error
+	Rollback(ctx context.Context) error
 
 	// Repository accessors within transaction
 	Organizations() OrganizationRepository

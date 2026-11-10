@@ -163,8 +163,93 @@ type txProvider struct {
 }
 
 func (t *txProvider) Begin(ctx context.Context) (repository.UnitOfWork, error) {
-	// Nested transactions not supported, return self
-	return t, nil
+	// Create savepoint for nested transaction
+	savepointName := fmt.Sprintf("sp_%d", time.Now().UnixNano())
+	_, err := t.tx.Exec(ctx, "SAVEPOINT "+savepointName)
+	if err != nil {
+		return nil, err
+	}
+	return &nestedTxProvider{parent: t, savepointName: savepointName}, nil
+}
+
+// nestedTxProvider implements nested transaction support via savepoints
+type nestedTxProvider struct {
+	parent        *txProvider
+	savepointName string
+}
+
+func (n *nestedTxProvider) Begin(ctx context.Context) (repository.UnitOfWork, error) {
+	// Create another savepoint for deeper nesting
+	savepointName := fmt.Sprintf("sp_%d", time.Now().UnixNano())
+	_, err := n.parent.tx.Exec(ctx, "SAVEPOINT "+savepointName)
+	if err != nil {
+		return nil, err
+	}
+	return &nestedTxProvider{parent: n.parent, savepointName: savepointName}, nil
+}
+
+func (n *nestedTxProvider) Organizations() repository.OrganizationRepository {
+	return &txOrgRepo{tx: n.parent.tx}
+}
+
+func (n *nestedTxProvider) Users() repository.UserRepository {
+	return &txUserRepo{tx: n.parent.tx}
+}
+
+func (n *nestedTxProvider) Memberships() repository.MembershipRepository {
+	return &txMembershipRepo{tx: n.parent.tx}
+}
+
+func (n *nestedTxProvider) Roles() repository.RoleRepository {
+	return &txRoleRepo{tx: n.parent.tx}
+}
+
+func (n *nestedTxProvider) Permissions() repository.PermissionRepository {
+	return &txPermissionRepo{tx: n.parent.tx}
+}
+
+func (n *nestedTxProvider) Sessions() repository.SessionRepository {
+	return &txSessionRepo{tx: n.parent.tx}
+}
+
+func (n *nestedTxProvider) Rooms() repository.RoomRepository {
+	return &txRoomRepo{tx: n.parent.tx}
+}
+
+func (n *nestedTxProvider) Bots() repository.BotRepository {
+	return &txBotRepo{tx: n.parent.tx}
+}
+
+func (n *nestedTxProvider) Plugins() repository.PluginRepository {
+	return &txPluginRepo{tx: n.parent.tx}
+}
+
+func (n *nestedTxProvider) PluginConfigs() repository.PluginConfigRepository {
+	return &txPluginConfigRepo{tx: n.parent.tx}
+}
+
+func (n *nestedTxProvider) AuditLogs() repository.AuditLogRepository {
+	return &txAuditLogRepo{tx: n.parent.tx}
+}
+
+func (n *nestedTxProvider) APIKeys() repository.APIKeyRepository {
+	return &txAPIKeyRepo{tx: n.parent.tx}
+}
+
+func (n *nestedTxProvider) BotConnections() repository.BotConnectionRepository {
+	return &txBotConnectionRepo{tx: n.parent.tx}
+}
+
+func (n *nestedTxProvider) Commit(ctx context.Context) error {
+	// Release savepoint
+	_, err := n.parent.tx.Exec(ctx, "RELEASE SAVEPOINT "+n.savepointName)
+	return err
+}
+
+func (n *nestedTxProvider) Rollback(ctx context.Context) error {
+	// Rollback to savepoint
+	_, err := n.parent.tx.Exec(ctx, "ROLLBACK TO SAVEPOINT "+n.savepointName)
+	return err
 }
 
 func (t *txProvider) Organizations() repository.OrganizationRepository {
@@ -219,12 +304,12 @@ func (t *txProvider) BotConnections() repository.BotConnectionRepository {
 	return &txBotConnectionRepo{tx: t.tx}
 }
 
-func (t *txProvider) Commit() error {
-	return t.tx.Commit(context.Background())
+func (t *txProvider) Commit(ctx context.Context) error {
+	return t.tx.Commit(ctx)
 }
 
-func (t *txProvider) Rollback() error {
-	return t.tx.Rollback(context.Background())
+func (t *txProvider) Rollback(ctx context.Context) error {
+	return t.tx.Rollback(ctx)
 }
 
 // ============================================================

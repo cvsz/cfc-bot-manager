@@ -28,3 +28,13 @@ func (s Style) Normalize() (Style,error) {
 	if !colorPattern.MatchString(s.Color) { return Style{},fmt.Errorf("color must be a six-digit hexadecimal color") }
 	return s,nil
 }
+
+// Validate validates the style without normalizing it
+func (s Style) Validate() error {
+	s.FontFamily = strings.TrimSpace(s.FontFamily)
+	if _,ok := allowedFamilies[s.FontFamily]; !ok { return fmt.Errorf("fontFamily is not supported") }
+	if s.FontSize < 10 || s.FontSize > 28 { return fmt.Errorf("fontSize must be between 10 and 28") }
+	s.Color = strings.ToUpper(strings.TrimSpace(s.Color))
+	if !colorPattern.MatchString(s.Color) { return fmt.Errorf("color must be a six-digit hexadecimal color") }
+	return nil
+}
