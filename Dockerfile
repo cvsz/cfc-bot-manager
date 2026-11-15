@@ -1,5 +1,5 @@
 # Production-Grade Python Runtime Dockerfile
-FROM python:3.12-alpine AS runtime
+FROM python:3.15-alpine AS runtime
 
 LABEL maintainer="maintainers@example.com"
 LABEL description="zTemplate Production-Grade Python Container Baseline"
