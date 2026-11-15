@@ -132,7 +132,7 @@ jobs:
           cache: false
 
       - name: Generate SBOM (Go)
-        uses: anchore/sbom-action@0.17.0
+        uses: anchore/sbom-action@v0.24.3
         with:
           path: ./backend
           format: spdx-json
@@ -144,7 +144,7 @@ jobs:
           node-version: '22'
 
       - name: Generate SBOM (Frontend)
-        uses: anchore/sbom-action@0.17.0
+        uses: anchore/sbom-action@v0.24.3
         with:
           path: ./frontend
           format: spdx-json
